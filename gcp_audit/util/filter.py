@@ -54,17 +54,21 @@ def filterjson(event, filter, matchtype, listcondition="or"):
             if not match:
                 break
     elif isinstance(filter, list) and isinstance(event, list):
-        for f in filter:
-            for e in event:
-                match = filterjson(e, f, matchtype, listcondition)
-                if ((listcondition == 'or' and match) or
-                   (listcondition == 'and' and not match)):
-                    break
+        # empty event, means no hit
+        if len(event) == 0:
+            match = False
+        else:
+            for f in filter:
+                for e in event:
+                    match = filterjson(e, f, matchtype, listcondition)
+                    if ((listcondition == 'or' and match) or
+                            (listcondition == 'and' and not match)):
+                        break
     elif isinstance(filter, list):
         for v in filter:
             match = filterjson(event, v, matchtype, listcondition)
             if ((listcondition == 'or' and match) or
-               (listcondition == 'and' and not match)):
+                    (listcondition == 'and' and not match)):
                 break
     elif isinstance(filter, basestring):
         match = matchstr(event, filter, matchtype)

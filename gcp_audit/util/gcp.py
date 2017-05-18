@@ -19,8 +19,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from googleapiclient import discovery
-from oauth2client.client import GoogleCredentials
+try:
+    from googleapiclient import discovery
+except ImportError:
+    # allow tests without this dependency
+    discovery = None
+
+try:
+    from oauth2client.client import GoogleCredentials
+except ImportError:
+    # allow tests without this dependency
+    GoogleCredentials = None
 
 
 def create_service(service, version='v1'):
@@ -106,38 +115,19 @@ def get_cloudsql_instances(project):
     return res
 
 
-def get_projects_for_organization(organization_id):
+def get_all_projects():
+    """Get all organizations that the credentials have access to."""
     projects = []
     page_token = None
 
     while True:
         resp = create_service('cloudresourcemanager', 'v1beta1').projects() \
-            .list(filter='parent.id:%s' % organization_id,
-                  pageSize=250,
-                  pageToken=page_token).execute()
+            .list(pageSize=250, pageToken=page_token).execute()
 
         projects += [x['projectId'] for x in resp['projects']]
 
         page_token = resp.get('nextPageToken', None)
         if not page_token:
             break
-
-    return projects
-
-
-def get_all_organizations():
-    """Get all organizations that the credentials have access to."""
-    resp = create_service('cloudresourcemanager', 'v1beta1') \
-        .organizations().list().execute()
-
-    return [x['organizationId'] for x in resp['organizations']]
-
-
-def get_all_projects():
-    """Get all organizations that the credentials have access to."""
-    projects = []
-
-    for org in get_all_organizations():
-        projects += get_projects_for_organization(org)
 
     return projects

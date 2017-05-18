@@ -21,7 +21,13 @@
 
 import atexit
 import datetime
-import googleapiclient
+
+try:
+    import googleapiclient
+except ImportError:
+    # allow tests without this dependency
+    googleapiclient = None
+
 import json
 import os
 import signal
