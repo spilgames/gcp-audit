@@ -1,0 +1,26 @@
+{
+    "buckets": {
+        "plugin": "util.plugins.buckets",
+        "descfield": "bucket"
+    },
+    "bucket_objects": {
+        "plugin": "util.plugins.bucket_objects",
+        "descfield": "entity"
+    },
+    "cloudsql": {
+        "plugin": "util.plugins.cloudsql",
+        "descfield": "name"
+    },
+    "firewalls": {
+        "plugin": "util.plugins.firewalls",
+        "descfield": "name"
+    },
+    "iam": {
+        "plugin": "util.plugins.iam",
+        "descfield": "role"
+    },
+    "compute_common_instance_metadata": {
+        "plugin": "util.plugins.compute_common_instance_metadata",
+        "descfield": "key"
+    }
+}

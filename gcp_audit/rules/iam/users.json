@@ -1,0 +1,15 @@
+{
+    "name": "Role has direct user access",
+    "filters": [
+        {
+            "matchtype": "regex",
+            "filter": {
+                "members": [
+                    {
+                        "user": ".*"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,11 @@
+{
+    "name": "Found ssh-keys in project metadata",
+    "filters": [
+        {
+            "matchtype": "regex",
+            "filter": {
+                "key": "ssh-keys|sshKeys"
+            }
+        }
+    ]
+}

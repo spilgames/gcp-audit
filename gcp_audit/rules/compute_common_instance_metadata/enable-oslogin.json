@@ -1,0 +1,13 @@
+{
+    "name": "OsLogin not set or disabled",
+    "match_type": "none",
+    "filters": [
+        {
+            "matchtype": "exact",
+            "filter": {
+                "key": "enable-oslogin",
+                "value": "TRUE"
+            }
+        }
+    ]
+}

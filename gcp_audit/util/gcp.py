@@ -131,3 +131,47 @@ def get_all_projects():
             break
 
     return projects
+
+def get_iam(project):
+    def member_obj(member):
+        (member_type, member_id) = member.split(':')
+        return {member_type: member_id}
+
+    service_v1 = create_service(service='cloudresourcemanager')
+    service_v2 = create_service(service='cloudresourcemanager', version='v2')
+
+    res = []
+    try:
+        merged_roles = {}
+        ancestry = service_v1.projects().getAncestry(projectId=project, body={}).execute()['ancestor']
+        for ancestor in ancestry[::-1]:
+            res_type = ancestor['resourceId']['type']
+            res_id = ancestor['resourceId']['id']
+            if res_type == 'project':
+                bindings = service_v1.projects().getIamPolicy(resource=res_id, body={}).execute()['bindings']
+            elif res_type == 'folder':
+                folder_id = 'folders/{}'.format(res_id)
+                bindings = service_v2.folders().getIamPolicy(resource=folder_id, body={}).execute()['bindings']
+            elif res_type == 'organization':
+                organization_id = 'organizations/{}'.format(res_id)
+                bindings = service_v1.organizations().getIamPolicy(resource=organization_id, body={}).execute()['bindings']
+            else:
+                bindings = []
+
+            for binding in bindings:
+                role = binding['role']
+                members = binding['members']
+                if role not in merged_roles:
+                    merged_roles[role] = set(members)
+                else:
+                    merged_roles[role].update(members)
+
+        for (role, members) in merged_roles.items():
+            res.append({
+                    u'role': role,
+                    u'members': [member_obj(member) for member in members],
+                })
+    except:
+        res = []
+
+    return res
