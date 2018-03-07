@@ -46,6 +46,7 @@ import yaml
 import re
 import operator
 import importlib
+from pkg_resources import parse_version
 
 
 logger = logging.getLogger(__name__)
@@ -344,6 +345,8 @@ class GcpAudit():
                 objlen = 1
 
             match = ops[op](objlen, val)
+        elif matchtype == 'version_below':
+            match = parse_version(estr) < parse_version(fstr)
         else:
             raise "ERROR: unknown mode"
 
