@@ -22,5 +22,9 @@
     "compute_common_instance_metadata": {
         "plugin": "util.plugins.compute_common_instance_metadata",
         "descfield": "key"
+    },
+    "project_labels": {
+        "plugin": "util.plugins.project_labels",
+        "descfield": "label"
     }
 }

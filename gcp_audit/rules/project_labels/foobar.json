@@ -1,0 +1,13 @@
+{
+    "name": "Missing project label: foobar",
+    "match_type": "none",
+    "filters": [
+        {
+            "matchtype": "regex",
+            "filter": {
+                "label": "foobar",
+                "value": ".+"
+            }
+        }
+    ]
+}
