@@ -1,0 +1,15 @@
+{
+    "name": "Cluster Master Authorized Networks not set or disabled",
+    "skip_empty_object": true,
+    "match_type": "none",
+    "filters": [
+        {
+            "matchtype": "exact",
+            "filter": {
+                "masterAuthorizedNetworksConfig": {
+                    "enabled": true
+                }
+            }
+        }
+    ]
+}

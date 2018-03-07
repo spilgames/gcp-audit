@@ -202,6 +202,10 @@ class GcpAudit():
                 if rule['match_type'] in ['all', 'none', 'any']:
                     match_type = rule['match_type']
 
+            if 'skip_empty_object' in rule:
+                if rule['skip_empty_object'] and not gcpobjects:
+                    continue
+
             matches = []
             for obj in gcpobjects:
 
