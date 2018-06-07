@@ -86,6 +86,8 @@ class GcpAudit():
 
         self._keyfile = keyfile
         self._projects = projects
+        self._all_projects = []
+        self._parents = {}
         self._cache = {
             'service': {},
         }
@@ -94,8 +96,9 @@ class GcpAudit():
     def audit(self):
         try:
             self._set_env_credentials()
+            self._fetch_all_available_projects()
             if not self._projects:
-                self._projects = self._list_all_available_projects()
+                self._projects = self._all_projects
 
             for project in self._projects:
                 logger.info('Auditing project %s', project)
@@ -133,21 +136,35 @@ class GcpAudit():
             else:
                 os.unsetenv('GOOGLE_APPLICATION_CREDENTIALS')
 
-    def _list_all_available_projects(self):
+    def _fetch_all_available_projects(self):
         """Get all projects that the credentials have access to."""
-        projects = []
+        self._all_projects = []
         page_token = None
+        self._parents = {}
 
         while True:
             resp = self._get_service('cloudresourcemanager').projects() \
                 .list(pageSize=250, pageToken=page_token).execute()
 
-            projects += [x['projectId'] for x in resp['projects']]
+            for project in resp['projects']:
+                project_id = project['projectId']
+                parent = (project['parent']['type'], project['parent']['id'])
+                self._all_projects.append(project_id)
+                self._parents[('project', project_id)] = parent
+                if parent not in self._parents:
+                    self._parents[parent] = None
 
             page_token = resp.get('nextPageToken', None)
             if not page_token:
                 break
-        return projects
+
+        resp = self._get_service('cloudresourcemanager', version='v2').folders().search(body={}).execute()
+        for folder in resp['folders']:
+            name = tuple(folder['name'].split('s/'))
+            parent = tuple(folder['parent'].split('s/'))
+            self._parents[name] = parent
+            if parent not in self._parents:
+                    self._parents[parent] = None
 
     def _get_service(self, service, version='v1'):
         service_key = '{service}_{version}'.format(service=service, version=version)
@@ -207,12 +224,19 @@ class GcpAudit():
                 if rule['skip_empty_object'] and not gcpobjects:
                     continue
 
+            if 'context' in rule:
+                context = rule['context']
+                if not self._can_proceed_with_project_in_context(project, context):
+                    logger.debug("excluding rule '%s' for project %s", rule['name'], project)
+                    continue
+                else:
+                    logger.debug("including rule '%s' for project %s", rule['name'], project)
+
             matches = []
             for obj in gcpobjects:
 
                 if 'filtercondition' in rule:
-                    res = self._apply_rule_filters(obj, rule['filters'],
-                                                   rule['filtercondition'])
+                    res = self._apply_rule_filters(obj, rule['filters'], rule['filtercondition'])
                 else:
                     res = self._apply_rule_filters(obj, rule['filters'])
                 if res:
@@ -249,6 +273,42 @@ class GcpAudit():
                         desc = match['object']
                         logger.error("object '%s/%s/%s' matches rule '%s'", project, ruletype, desc, rule['name'])
                         self._output[project][ruletype].append(match)
+
+    def _can_proceed_with_project_in_context(self, project, context):
+        default_action = 'include'
+        if 'default_action' in context:
+            if context['default_action'] == 'exclude':
+                default_action = 'exclude'
+        rules = []
+        if 'rules' in context:
+            rules = context['rules']
+
+        action = default_action
+        current_object = ('project', project)
+        match = False
+        for rule in rules:
+            current_action = rule['action']
+            ct_object = None
+            if 'project' in rule:
+                ct_object = ('project', rule['project'])
+            elif 'folder' in rule:
+                ct_object = ('folder', rule['folder'])
+            elif 'organization' in rule:
+                ct_object = ('organization', rule['organization'])
+
+            if ct_object:
+                test_object = current_object
+                while not match and test_object:
+                    if test_object == ct_object:
+                        match = True
+                        action = current_action
+                    else:
+                        test_object = self._parents[test_object]
+
+            if match:
+                break
+
+        return action == 'include'
 
     def _apply_rule_filters(self, obj, filters, filtercondition='and'):
         res = True
